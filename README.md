@@ -48,6 +48,8 @@ npm install
 npx tsx app.ts
 ```
 
+Note: It will open the Chrome browser, and you have to manually do the CAPTCHA
+
 ## Usage
 - You can send a direct message to the Slack Bot
 
@@ -59,5 +61,5 @@ npx tsx app.ts
 
 - Note:
   - ChatGPT only follows the conversation in mention event above, when sending a direct message, it will start a new thread.
-  - To reset thread, simple type `@YourSlackBot RESET_THREAD`
+  - To reset thread, simply type `@YourSlackBot RESET_THREAD`
   - Why not support conversation follow up for direct message? Ah... You know, I'm too lazy... The code is simple, you can do it yourself <3
