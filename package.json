@@ -1,13 +1,17 @@
 {
   "name": "chatgpt_slack",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Slack bot for chatgpt",
+  "main": "app.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx tsx app.ts"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "trietphm",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
   "dependencies": {
     "@slack/bolt": "^3.12.2",
     "chatgpt": "^2.5.0",

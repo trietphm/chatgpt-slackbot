@@ -45,7 +45,7 @@ npm install
 
 - Start the service
 ```
-npx tsx app.ts
+npm start
 ```
 
 Note: It will open the Chrome browser, and you have to manually do the CAPTCHA
