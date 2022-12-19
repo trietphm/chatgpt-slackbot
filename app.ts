@@ -19,34 +19,28 @@ const chatAPI = new ChatGPTAPIBrowser({
     password: process.env.OPENAI_PASSWORD
   });
 
+// Save conversation id
+let conversationId: string
+let parentMessageId: string
+
+// --------------------
+
 // Listens to incoming messages that contain "hello"
 app.message(async ({ message, say }) => {
   // say() sends a message to the channel where the event was triggered
   const prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, '')
-
-
   let msg = "<@" + message.user + "> You asked:\n";
   msg += ">" + message.text;
 
   console.log("DM: " + msg)
-  const response = await chatAPI.sendMessage(prompt)
+  res = await chatAPI.sendMessage(prompt)
+  response = res.response
+
   console.log("Response to @" + message.user +":\n" + response)
 
   await say(response);
 });
 
-// Save conversation id
-let conversationId: string
-let parentMessageId: string
-const onConversationResponse = (res: ConversationResponseEvent) => {
-  if (res.conversation_id) {
-    conversationId = res.conversation_id
-  }
-
-  if (res.message?.id) {
-	parentMessageId = res.message.id
-  }
-}
 
 // Listens to mention
 app.event('app_mention', async ({ event, context, client, say }) => {
@@ -65,17 +59,24 @@ app.event('app_mention', async ({ event, context, client, say }) => {
   	await say(msg);
 
   } else {
-	  // reply
+	// reply
   	let msg = "<@" + event.user + "> You asked:\n";
   	msg += ">" + prompt + "\n";
+	let response: string
 
-  	const response = await chatAPI.sendMessage(prompt,{
-  	        conversationId,
-  	        parentMessageId,
-  	        onConversationResponse
-  	})
+  	res = await chatAPI.sendMessage(prompt, {
+		conversationId,
+		parentMessageId
+	})
+        if (res.conversationId) {
+          conversationId = res.conversationId
+        }
 
-	msg += response
+        if (res.messageId) {
+              parentMessageId = res.messageId
+        }
+
+	msg += res.response
 
   	await say(msg);
   }
@@ -83,10 +84,10 @@ app.event('app_mention', async ({ event, context, client, say }) => {
 });
 
 (async () => {
-  await chatAPI.init()
+  await chatAPI.initSession()
   // Start your app
   //  await chatAPI.ensureAuth()
   await app.start();
 
-  console.log('⚡️ Bolt app is running!');
+  console.log('⚡️ Bolt app is running at port 4000!');
 })();

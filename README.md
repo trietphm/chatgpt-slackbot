@@ -49,6 +49,7 @@ npm start
 ```
 
 Note: It will open the Chrome browser, and you have to manually do the CAPTCHA
+Or you can use refer to this page to automatically by pass the CAPTCHA https://github.com/transitive-bullshit/chatgpt-api/blob/v3.3.0/readme.md#captchas
 
 ## Usage
 - You can send a direct message to the Slack Bot
