@@ -27,18 +27,23 @@ let parentMessageId: string
 
 // Listens to incoming messages that contain "hello"
 app.message(async ({ message, say }) => {
-  // say() sends a message to the channel where the event was triggered
-  const prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, '')
-  let msg = "<@" + message.user + "> You asked:\n";
-  msg += ">" + message.text;
+  try {
+    // say() sends a message to the channel where the event was triggered
+    const prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, '')
+    let msg = "<@" + message.user + "> You asked:\n";
+    msg += ">" + message.text;
 
-  console.log("DM: " + msg)
-  res = await chatAPI.sendMessage(prompt)
-  response = res.response
+    console.log("DM: " + msg)
+    res = await chatAPI.sendMessage(prompt)
+    response = res.response
 
-  console.log("Response to @" + message.user +":\n" + response)
+    console.log("Response to @" + message.user +":\n" + response)
 
-  await say(response);
+    await say(response);
+  } catch (err) {
+    await say("ERROR: Something went wrong, please try again after a while.")
+    console.log(err)
+  }
 });
 
 
@@ -59,26 +64,31 @@ app.event('app_mention', async ({ event, context, client, say }) => {
   	await say(msg);
 
   } else {
-	// reply
-  	let msg = "<@" + event.user + "> You asked:\n";
-  	msg += ">" + prompt + "\n";
-	let response: string
+	  try {
+		// reply
+		let msg = "<@" + event.user + "> You asked:\n";
+		msg += ">" + prompt + "\n";
+		let response: string
 
-  	res = await chatAPI.sendMessage(prompt, {
-		conversationId,
-		parentMessageId
-	})
-        if (res.conversationId) {
-          conversationId = res.conversationId
-        }
+		res = await chatAPI.sendMessage(prompt, {
+			conversationId,
+			parentMessageId
+		})
+		if (res.conversationId) {
+		  conversationId = res.conversationId
+		}
 
-        if (res.messageId) {
-              parentMessageId = res.messageId
-        }
+		if (res.messageId) {
+		      parentMessageId = res.messageId
+		}
 
-	msg += res.response
+		msg += res.response
 
-  	await say(msg);
+		await say(msg);
+	  } catch (err) {
+		  await say("ERROR: Something went wrong, please try again after a while.")
+		  console.log(err)
+	  }
   }
 
 });
