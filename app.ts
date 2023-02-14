@@ -20,6 +20,13 @@ const chatAPI = new ChatGPTAPI({ apiKey: process.env.OPENAI_API_KEY });
 let conversationId: string
 let parentMessageId: string
 
+interface ConversationHistory {
+  conversationId: string;
+  parentMessageId: string;
+}
+
+let dmConversation = new Map<string, ConversationHistory>();
+
 // --------------------
 
 // Listens to incoming messages that contain "hello"
@@ -33,7 +40,23 @@ app.message(async ({ message, say, client, logger }) => {
     await client.reactions.add({ channel: message.channel, name: 'working-on-it', timestamp: message.ts });
 
     console.log("DM: " + msg)
-    res = await chatAPI.sendMessage(prompt)
+
+    let ch = dmConversation.get(message.user)
+    const conversationId = ch?.conversationId
+    const parentMessageId = ch?.parentMessageId
+    res = await chatAPI.sendMessage(prompt, {
+			conversationId,
+			parentMessageId
+    })
+    ch = {} as ConversationHistory;
+    if (res.conversationId) {
+      ch.conversationId = res.conversationId
+    }
+    
+    if (res.messageId) {
+      ch.parentMessageId = res.messageId
+    }
+    dmConversation.set(message.user, ch)
     response = res.text
 
     console.log("Response to @" + message.user +":\n" + response)
