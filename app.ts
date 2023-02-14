@@ -23,12 +23,14 @@ let parentMessageId: string
 // --------------------
 
 // Listens to incoming messages that contain "hello"
-app.message(async ({ message, say }) => {
+app.message(async ({ message, say, client, logger }) => {
   try {
     // say() sends a message to the channel where the event was triggered
     const prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, '')
     let msg = "<@" + message.user + "> You asked:\n";
     msg += ">" + message.text;
+
+    await client.reactions.add({ channel: message.channel, name: 'working-on-it', timestamp: message.ts });
 
     console.log("DM: " + msg)
     res = await chatAPI.sendMessage(prompt)
@@ -37,6 +39,7 @@ app.message(async ({ message, say }) => {
     console.log("Response to @" + message.user +":\n" + response)
 
     await say(response);
+    await client.reactions.remove({ channel: message.channel, name: 'working-on-it', timestamp: message.ts });
   } catch (err) {
     await say("ERROR: Something went wrong, please try again after a while.")
     console.log(err)
