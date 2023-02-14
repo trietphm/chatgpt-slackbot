@@ -7,6 +7,8 @@ This app uses the library at https://github.com/transitive-bullshit/chatgpt-api
 _Note: The code is ugly because I only want to make it works and too lazy to maintain_
 
 ## Setup
+### Register for an OpenAI API Key
+Sign up at https://platform.openai.com/overview and create a new API key in https://platform.openai.com/account/api-keys
 ### Setup Slack App
 Check this for the guide how to create a Slack App https://slack.dev/bolt-js/tutorial/getting-started
 
@@ -37,15 +39,16 @@ _Probably don't need all of them, but I'm too lazy to check, sorry_
 - Create new `.env` and update the information
 ```
 cp .env.sample .env
+# Open file `.env` and filling all the keys
 ```
 - Install
 ```
-npm install
+yarn install
 ```
 
 - Start the service
 ```
-npm start
+yarn start
 ```
 
 Note: It will open the Chrome browser, and you have to manually do the CAPTCHA
