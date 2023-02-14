@@ -1,6 +1,6 @@
 import dotenv from 'dotenv-safe'
 import delay from 'delay'
-import { ChatGPTAPI } from 'chatgpt'
+import { ChatGPTAPIBrowser, ConversationResponseEvent } from 'chatgpt'
 
 dotenv.config()
 
@@ -14,7 +14,10 @@ const app = new App({
   appToken: process.env.SLACK_APP_TOKEN // add this
 });
 
-const chatAPI = new ChatGPTAPI({ apiKey: process.env.OPENAI_API_KEY });
+const chatAPI = new ChatGPTAPIBrowser({ 
+	email: process.env.OPENAI_EMAIL,
+	password: process.env.OPENAI_PASSWORD
+});
 
 // Save conversation id
 let conversationId: string
@@ -57,7 +60,7 @@ app.message(async ({ message, say, client, logger }) => {
       ch.parentMessageId = res.messageId
     }
     dmConversation.set(message.user, ch)
-    response = res.text
+    response = res.response
 
     console.log("Response to @" + message.user +":\n" + response)
 
@@ -105,7 +108,7 @@ app.event('app_mention', async ({ event, context, client, say }) => {
 		      parentMessageId = res.messageId
 		}
 
-		msg += res.text
+		msg += res.response
 
 		await say(msg);
 	  } catch (err) {
@@ -117,6 +120,7 @@ app.event('app_mention', async ({ event, context, client, say }) => {
 });
 
 (async () => {
+  await chatAPI.initSession()
   await app.start();
 
   console.log('⚡️ Bolt app is running at port 4000!');
