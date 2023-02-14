@@ -4,6 +4,9 @@ ChatGPT for Slack
 Start an API service for interacting with ChatGPT on Slack.
 This app uses the library at https://github.com/transitive-bullshit/chatgpt-api
 
+*IMPORTANT*: Use branch `master` for above chatgpt-api latest version (v4.x) which uses OpenAI API and use branch `support-reaction` for chatgpt-api v3.x which scrape data from official website ChatGPT.
+OpenAI API results could be not as good as the ChatGPT but it's more stable. Try and decide what suit you best.
+
 _Note: The code is ugly because I only want to make it works and too lazy to maintain_
 
 ## Setup
