@@ -19,7 +19,6 @@ const app = new App({
 const chatAPI = new ChatGPTAPI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Save conversation id
-let conversationId: string;
 let parentMessageId: string;
 
 // --------------------
@@ -73,9 +72,8 @@ app.event("app_mention", async ({ event, context, client, say }) => {
 
   if (prompt.includes("RESET_THREAD")) {
     // RESET THREAD
-    chatAPI.resetThread();
+    //chatAPI.resetThread();
 
-    conversationId = "";
     parentMessageId = "";
 
     let msg =
@@ -99,15 +97,11 @@ app.event("app_mention", async ({ event, context, client, say }) => {
       });
 
       res = await chatAPI.sendMessage(prompt, {
-        conversationId,
         parentMessageId,
       });
-      if (res.conversationId) {
-        conversationId = res.conversationId;
-      }
 
-      if (res.messageId) {
-        parentMessageId = res.messageId;
+      if (res.id) {
+        parentMessageId = res.id;
       }
 
       msg += res.text;
