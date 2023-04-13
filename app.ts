@@ -6,7 +6,6 @@ dotenv.config();
 
 const { App } = require("@slack/bolt");
 const WAITING_REACTION_EMOJI = "eyes";
-const REPLIED_REACTION_EMOJI = "white_check_mark";
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
@@ -20,16 +19,15 @@ const chatAPI = new ChatGPTAPI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Save conversation id
 let parentMessageId: string;
+let threadMap: Map<string, string> = new Map();
 
 // --------------------
 
-// Listens to incoming messages
+// Listens to incoming direct messages
 app.message(async ({ message, say, client, logger }) => {
   try {
     // say() sends a message to the channel where the event was triggered
     const prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
-    let msg = "<@" + message.user + "> You asked:\n";
-    msg += ">" + message.text;
 
     // Add a reaction so we know the ChatGPT is replying
     await client.reactions.add({
@@ -38,14 +36,23 @@ app.message(async ({ message, say, client, logger }) => {
       timestamp: message.ts,
     });
 
-    console.log("DM: " + msg);
+    console.log("DM: " + prompt);
 
-    res = await chatAPI.sendMessage(prompt);
+    const parentMessageId = threadMap.get(message.thread_ts);
+    res = await chatAPI.sendMessage(prompt, {
+	    parentMessageId,
+    });
+
     response = res.text;
 
-    console.log("Response to @" + message.user + ":\n" + response);
+    if (res.id) {
+      threadMap.set(message.thread_ts, res.id);
+    }
 
-    await say(response);
+    await say({
+      text: response,
+      thread_ts: message.ts,
+    });
 
     // Remove the waiting reaction emoji after response
     await client.reactions.remove({
@@ -53,14 +60,11 @@ app.message(async ({ message, say, client, logger }) => {
       name: WAITING_REACTION_EMOJI,
       timestamp: message.ts,
     });
-    // Mark the question as done
-    await client.reactions.add({
-      channel: message.channel,
-      name: REPLIED_REACTION_EMOJI,
-      timestamp: message.ts,
-    });
   } catch (err) {
-    await say("ERROR: Something went wrong, please try again after a while.");
+    await say({
+      text: "ERROR: Something went wrong, please try again after a while.",
+      thread_ts: message.ts,
+    });
     console.log(err);
   }
 });
@@ -69,61 +73,40 @@ app.message(async ({ message, say, client, logger }) => {
 app.event("app_mention", async ({ event, context, client, say }) => {
   console.log("Mention: " + event.text);
   const prompt = event.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
+  try {
+    // Add a reaction so we know the ChatGPT is replying
+    await client.reactions.add({
+      channel: event.channel,
+      name: WAITING_REACTION_EMOJI,
+      timestamp: event.ts,
+    });
 
-  if (prompt.includes("RESET_THREAD")) {
-    // RESET THREAD
-    //chatAPI.resetThread();
+    const parentMessageId = threadMap.get(event.thread_ts);
+    res = await chatAPI.sendMessage(prompt, {
+	    parentMessageId,
+    });
 
-    parentMessageId = "";
-
-    let msg =
-      "<@" +
-      event.user +
-      "> asked to Reset the thread. Started a new conversation.";
-
-    await say(msg);
-  } else {
-    try {
-      // reply
-      let msg = "<@" + event.user + "> You asked:\n";
-      msg += ">" + prompt + "\n";
-      let response: string;
-
-      // Add a reaction so we know the ChatGPT is replying
-      await client.reactions.add({
-        channel: event.channel,
-        name: WAITING_REACTION_EMOJI,
-        timestamp: event.ts,
-      });
-
-      res = await chatAPI.sendMessage(prompt, {
-        parentMessageId,
-      });
-
-      if (res.id) {
-        parentMessageId = res.id;
-      }
-
-      msg += res.text;
-
-      await say(msg);
-      // Remove the waiting reaction emoji after response
-      await client.reactions.remove({
-        channel: event.channel,
-        name: WAITING_REACTION_EMOJI,
-        timestamp: event.ts,
-      });
-
-      // Mark the question as done
-      await client.reactions.add({
-        channel: event.channel,
-        name: REPLIED_REACTION_EMOJI,
-        timestamp: event.ts,
-      });
-    } catch (err) {
-      await say("ERROR: Something went wrong, please try again after a while.");
-      console.log(err);
+    if (res.id) {
+      threadMap.set(event.thread_ts, res.id);
     }
+
+
+    await say({
+      text: res.text,
+      thread_ts: event.ts,
+    });
+    // Remove the waiting reaction emoji after response
+    await client.reactions.remove({
+      channel: event.channel,
+      name: WAITING_REACTION_EMOJI,
+      timestamp: event.ts,
+    });
+  } catch (err) {
+    await say({
+      text: "ERROR: Something went wrong, please try again after a while.",
+      thread_ts: event.ts,
+    });
+    console.log(err);
   }
 });
 
