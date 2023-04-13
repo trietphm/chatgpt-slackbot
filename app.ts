@@ -15,7 +15,14 @@ const app = new App({
   appToken: process.env.SLACK_APP_TOKEN, // add this
 });
 
-const chatAPI = new ChatGPTAPI({ apiKey: process.env.OPENAI_API_KEY });
+const chatAPI = new ChatGPTAPI({
+  apiKey: process.env.OPENAI_API_KEY,
+  completionParams: {
+    model: "gpt-3.5-turbo",
+    temperature: 0.5,
+    top_p: 0.8,
+  },
+});
 
 // Save conversation id
 let parentMessageId: string;
@@ -40,7 +47,7 @@ app.message(async ({ message, say, client, logger }) => {
 
     const parentMessageId = threadMap.get(message.thread_ts);
     res = await chatAPI.sendMessage(prompt, {
-	    parentMessageId,
+      parentMessageId,
     });
 
     response = res.text;
@@ -83,13 +90,12 @@ app.event("app_mention", async ({ event, context, client, say }) => {
 
     const parentMessageId = threadMap.get(event.thread_ts);
     res = await chatAPI.sendMessage(prompt, {
-	    parentMessageId,
+      parentMessageId,
     });
 
     if (res.id) {
       threadMap.set(event.thread_ts, res.id);
     }
-
 
     await say({
       text: res.text,
