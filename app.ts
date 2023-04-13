@@ -25,7 +25,6 @@ const chatAPI = new ChatGPTAPI({
 });
 
 // Save conversation id
-let parentMessageId: string;
 let threadMap: Map<string, string> = new Map();
 
 // --------------------
@@ -53,7 +52,8 @@ app.message(async ({ message, say, client, logger }) => {
     response = res.text;
 
     if (res.id) {
-      threadMap.set(message.thread_ts, res.id);
+      const threadId = message.thread_ts || message.event_ts;
+      threadMap.set(threadId, res.id);
     }
 
     await say({
@@ -94,7 +94,8 @@ app.event("app_mention", async ({ event, context, client, say }) => {
     });
 
     if (res.id) {
-      threadMap.set(event.thread_ts, res.id);
+      const threadId = event.thread_ts || event.event_ts;
+      threadMap.set(threadId, res.id);
     }
 
     await say({
