@@ -51,19 +51,12 @@ yarn install
 yarn start
 ```
 
-Note: It will open the Chrome browser, and you have to manually do the CAPTCHA
-Or you can use refer to this page to automatically by pass the CAPTCHA https://github.com/transitive-bullshit/chatgpt-api/blob/v3.3.0/readme.md#captchas
-
 ## Usage
-- You can send a direct message to the Slack Bot
+- You can send a direct message to the Slack Bot and it will reply in a thread. Reply to the thread will follow the conversation
 
-![](images/dm.png)
+![image](https://user-images.githubusercontent.com/4161828/236397582-53ddcf79-12c1-4fd9-8899-9ff158d612da.png)
 
-- Or invite it to a channel and mention it `@YourSlackBot <your question>`
+- Or invite it to a channel and mention it `@YourSlackBot <your question>`, you can mention it in the thread to continue the conversation
 
-![](images/mention.png)
+![image](https://user-images.githubusercontent.com/4161828/236398152-d11fcbbc-f2c7-4cc9-8c55-6e38f039f160.png)
 
-- Note:
-  - ChatGPT only follows the conversation in mention event above, when sending a direct message, it will start a new thread.
-  - To reset thread, simply type `@YourSlackBot RESET_THREAD`
-  - Why not support conversation follow up for direct message? Ah... You know, I'm too lazy... The code is simple, you can do it yourself <3
