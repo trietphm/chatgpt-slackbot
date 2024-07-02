@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@slack/bolt": "^3.12.2",
+    "@slack/bolt": "^3.19.0",
     "chatgpt": "5.2.2",
     "delay": "^5.0.0",
     "dotenv-safe": "^8.2.0"
