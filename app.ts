@@ -117,8 +117,19 @@ app.event("app_mention", async ({ event, context, client, say }) => {
   }
 });
 
+const startApp = async () => {
+  try {
+    await app.start();
+  } catch (error) {
+      console.error(error);
+      console.error("Caught server disconnect error. Restarting app...");
+      return startApp();
+  }
+}
+
+
 (async () => {
-  await app.start();
+  await startApp();
 
   console.log("⚡️ Slack chat app is running at port 4000!");
 })();
