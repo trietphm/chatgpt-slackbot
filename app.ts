@@ -6,6 +6,7 @@ const { App } = require("@slack/bolt");
 const WAITING_REACTION_EMOJI = "eyes";
 
 dotenv.config();
+let SlackUsers: Map<string, string> = new Map();
 // Initializes your app with your bot token and signing secret
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -20,7 +21,8 @@ const openai = new OpenAI({
 
 enum Role {
   user,
-  assistant
+  assistant,
+  system,
 }
 
 interface ChatMessage {
@@ -45,6 +47,10 @@ function newAssistantMessage(message: string): ChatMessage {
   return { role: Role[Role.assistant], content: message }
 }
 
+function newSystemMessage(message: string): ChatMessage {
+  return { role: Role[Role.system], content: message }
+}
+
 async function reactWaitingEmoji(client, channel, ts) {
   client.reactions.add({
       channel: channel,
@@ -67,25 +73,51 @@ const logWithTimestamp = (message: string): void => {
 };
 
 
+async function fetchMessagesFromSlackThread(client, threadTs, channel) {
+  const response = await client.conversations.replies({
+    channel: channel,
+    ts: threadTs,
+  })
+ 
+  // Get all messages from the thread and combine them into a single prompt
+  let conversations = "";
+  for (let message of response.messages) {
+    conversations += SlackUsers.get(message.user) + ": " + message.text + "\n";
+  }
+  return conversations;
+}
+
+
+
+
+
+
+// --------------------
+// Handle Slack Events
+// --------------------
+
 // Save all the conversations so we can send this to openai again
 // Map<slack_thread_id, ChatMessage[]>
 let threadMap: Map<string, ChatMessage[]> = new Map();
 
-// --------------------
-
 // Listens to incoming direct messages
 app.message(async ({ message, say, client, logger }) => {
   try {
-    // say() sends a message to the channel where the event was triggered
-    const prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
+    let prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
 
     // Add a reaction so we know the ChatGPT is replying
     await reactWaitingEmoji(client, message.channel, message.ts);
     logWithTimestamp(`Sent message: ${prompt}`);
 
+
+    if (prompt.trim().toLowerCase() == "summary") {
+      const SlackThreadMessages = await fetchMessagesFromSlackThread(client, message.thread_ts, message.channel);
+      prompt = "Please provide a summary of the following conversation, bold the name with one star character instead of two star character:\n\n" + SlackThreadMessages
+    }
+
     // Get the conversation for the thread
     const threadId = message.thread_ts || message.event_ts;
-    let conversations = threadMap.get(threadId) || [];
+    let conversations = threadMap.get(threadId) || [newSystemMessage("Response with the Slack markdown format: use only one star character for bold, not two star characters")];
 
     // Add the user message to the conversation
     conversations.push(newUserMessage(prompt));
@@ -125,16 +157,21 @@ app.message(async ({ message, say, client, logger }) => {
 // Listens to mention
 app.event("app_mention", async ({ event, context, client, say }) => {
   console.log("Mention: " + event.text);
-  const prompt = event.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
+  let prompt = event.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
   try {
 
     // Add a reaction so we know the ChatGPT is replying
     await reactWaitingEmoji(client, event.channel, event.ts);
     logWithTimestamp(`Sent message: ${prompt}`);
 
+    if (prompt.trim().toLowerCase() == "summary") {
+      const SlackThreadMessages = await fetchMessagesFromSlackThread(client, event.thread_ts, event.channel);
+      prompt = "Please provide a summary of the following conversation, bold the name with one star character instead of two star character:\n\n" + SlackThreadMessages
+    }
+
     // Get the conversation for the thread
     const threadId = event.thread_ts || event.event_ts;
-    let conversations = threadMap.get(threadId) || [];
+    let conversations = threadMap.get(threadId) || [newSystemMessage("Response with the Slack markdown format: use only one star character for bold, not two star characters")];
 
     // Add the user message to the conversation
     conversations.push(newUserMessage(prompt));
@@ -173,9 +210,15 @@ app.event("app_mention", async ({ event, context, client, say }) => {
   }
 });
 
+// --------------------
+// End Handle Slack Events
+// --------------------
+
+// Auto restart the app when it disconnects from the Slack websocket
 const startApp = async () => {
   try {
     await app.start();
+
   } catch (error) {
       console.error(error);
       console.error("Caught server disconnect error. Restarting app...");
@@ -183,7 +226,25 @@ const startApp = async () => {
   }
 }
 
+async function initDataFromSlack() {
+  try {
+    // Get bot id
+    //const authResult = await app.client.auth.test();
+    //SlackBotID = authResult.user_id;
 
+    // get users list
+    const users = await app.client.users.list();
+    for (let user of users.members) {
+      SlackUsers.set(user.id, user.name);
+    }
+
+  } catch (error) {
+    // Log any errors that occur
+    console.error('Error during authentication test:', error);
+  }
+}
+
+initDataFromSlack();
 (async () => {
   await startApp();
 
