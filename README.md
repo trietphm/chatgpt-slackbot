@@ -54,11 +54,13 @@ yarn start
 ### Ask questions
 - You can send a **direct message** to the Slack Bot and it will reply in a thread. Reply to the thread will follow the conversation
 
-![image](https://user-images.githubusercontent.com/4161828/236397582-53ddcf79-12c1-4fd9-8899-9ff158d612da.png)
+<img src="images/dm.png" height="250">
 
 - Or invite it to a channel and mention it `@YourSlackBot <your question>`, you can mention it in the thread to continue the conversation
 
-![image](https://user-images.githubusercontent.com/4161828/236398152-d11fcbbc-f2c7-4cc9-8c55-6e38f039f160.png)
+<img src="images/mention.png" width="512">
 
 ### Summary Slack thread
 You can send a message `@YourSlackBot summary` to get the summary of the current thread
+
+<img src="images/summary.png" width="512">
