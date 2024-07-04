@@ -1,6 +1,6 @@
 import dotenv from "dotenv-safe";
 import OpenAI from "openai";
-import { ChatGPTAPI } from "chatgpt";
+import slackifyMarkdown from "slackify-markdown";
 
 const { App } = require("@slack/bolt");
 const WAITING_REACTION_EMOJI = "eyes";
@@ -112,12 +112,12 @@ app.message(async ({ message, say, client, logger }) => {
 
     if (prompt.trim().toLowerCase() == "summary") {
       const SlackThreadMessages = await fetchMessagesFromSlackThread(client, message.thread_ts, message.channel);
-      prompt = "Please provide a summary of the following conversation, bold the name with one star character instead of two star character:\n\n" + SlackThreadMessages
+      prompt = "Please provide a summary of the following conversation:\n\n" + SlackThreadMessages
     }
 
     // Get the conversation for the thread
     const threadId = message.thread_ts || message.event_ts;
-    let conversations = threadMap.get(threadId) || [newSystemMessage("Response with the Slack markdown format: use only one star character for bold, not two star characters")];
+    let conversations = threadMap.get(threadId) || [];
 
     // Add the user message to the conversation
     conversations.push(newUserMessage(prompt));
@@ -139,7 +139,7 @@ app.message(async ({ message, say, client, logger }) => {
 
     // Send response to Slack
     await say({
-      text: response,
+      text: slackifyMarkdown(response),
       thread_ts: message.ts,
     });
 
@@ -166,12 +166,12 @@ app.event("app_mention", async ({ event, context, client, say }) => {
 
     if (prompt.trim().toLowerCase() == "summary") {
       const SlackThreadMessages = await fetchMessagesFromSlackThread(client, event.thread_ts, event.channel);
-      prompt = "Please provide a summary of the following conversation, bold the name with one star character instead of two star character:\n\n" + SlackThreadMessages
+      prompt = "Please provide a summary of the following conversation:\n\n" + SlackThreadMessages
     }
 
     // Get the conversation for the thread
     const threadId = event.thread_ts || event.event_ts;
-    let conversations = threadMap.get(threadId) || [newSystemMessage("Response with the Slack markdown format: use only one star character for bold, not two star characters")];
+    let conversations = threadMap.get(threadId) || [];
 
     // Add the user message to the conversation
     conversations.push(newUserMessage(prompt));
@@ -193,7 +193,7 @@ app.event("app_mention", async ({ event, context, client, say }) => {
 
     // Send response to Slack
     await say({
-      text: response,
+      text: slackifyMarkdown(response),
       thread_ts:event.ts,
     });
 

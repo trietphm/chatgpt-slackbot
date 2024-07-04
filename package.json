@@ -18,6 +18,7 @@
     "delay": "^5.0.0",
     "dotenv": "^16.4.5",
     "dotenv-safe": "^9.1.0",
-    "openai": "^4.52.2"
+    "openai": "^4.52.2",
+    "slackify-markdown": "^4.4.0"
   }
 }
