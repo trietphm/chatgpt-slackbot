@@ -1,8 +1,7 @@
 ChatGPT for Slack
 ---
 
-Start an API service for interacting with ChatGPT on Slack.
-This app uses the library at https://github.com/transitive-bullshit/chatgpt-api. Check that repo and the code in `app.ts` for more detail.
+Start an API service for interacting with ChatGPT on Slack using the [OpenAI node](https://github.com/openai/openai-node)
 
 _Note: The code is ugly because I only want to make it works and too lazy to maintain_
 
