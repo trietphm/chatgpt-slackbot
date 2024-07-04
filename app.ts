@@ -83,6 +83,12 @@ async function fetchMessagesFromSlackThread(client, threadTs, channel) {
   let conversations = "";
   for (let message of response.messages) {
     conversations += SlackUsers.get(message.user) + ": " + message.text + "\n";
+    if (message.attachments && message.attachments.length > 0) {
+      let attachMessage = message.attachments[0].pretext? message.attachments[0].pretext + ": " : "";
+
+      attachMessage += message.attachments[0].text || message.attachments[0].fallback;
+      conversations += SlackUsers.get(message.user) + " attach: " + attachMessage + "\n";
+    }
   }
   return conversations;
 }
@@ -235,7 +241,8 @@ async function initDataFromSlack() {
     // get users list
     const users = await app.client.users.list();
     for (let user of users.members) {
-      SlackUsers.set(user.id, user.name);
+      const name = user.name + (user.real_name ? ` (${user.real_name})` : "");
+      SlackUsers.set(user.id, name);
     }
 
   } catch (error) {
