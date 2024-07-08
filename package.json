@@ -13,11 +13,13 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@notionhq/client": "^2.2.15",
     "@slack/bolt": "^3.12.2",
     "chatgpt": "5.2.2",
     "delay": "^5.0.0",
     "dotenv": "^16.4.5",
     "dotenv-safe": "^9.1.0",
+    "notion-to-md": "^3.1.1",
     "openai": "^4.52.2",
     "slackify-markdown": "^4.4.0"
   }
