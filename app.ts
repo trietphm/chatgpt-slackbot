@@ -251,7 +251,7 @@ app.event("app_mention", async ({ event, context, client, say }) => {
     logWithTimestamp(`Sent message: ${prompt}`);
 
     // Check if the message is a Notion page link
-    const notionPageId = getNotionPageId(prompt);
+    const notionPageId = getNotionPageId(prompt.trim());
     if (notionPageId != "") {
       // Read the notion page content and reply to the slack thread
       await readNotionPageAndReplySlack(notionPageId, threadId, event.ts, say);
