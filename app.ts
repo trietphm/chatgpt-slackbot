@@ -107,8 +107,14 @@ async function getMarkdownDataFromNotionPage(pageId: string) {
     return {success: "false", message: "Notion token is missing"};
   }
 
-  const mdblocks = await n2m.pageToMarkdown(pageId);
-  const mdString = n2m.toMarkdownString(mdblocks);
+  let mdString;
+
+  try {
+    const mdblocks = await n2m.pageToMarkdown(pageId);
+    mdString = n2m.toMarkdownString(mdblocks);
+  } catch (error) {
+    return {success: "false", message: "Error while fetching Notion page, please make sure to connect the page with ChatGPT Integration. Error: " + error};
+  }
 
   return {success: "true", message: mdString.parent};
 }
@@ -116,7 +122,7 @@ async function getMarkdownDataFromNotionPage(pageId: string) {
 async function addNotionPageIntoThread(pageId: string, threadId: string) {
   const data = await getMarkdownDataFromNotionPage(pageId);
   if (data.success == "false") {
-    return false;
+    return {success: false, message: data.message};
   }
 
   let conversations = threadMap.get(threadId) || [];
@@ -128,7 +134,7 @@ async function addNotionPageIntoThread(pageId: string, threadId: string) {
  
   // Update the threadMap
   threadMap.set(threadId, conversations);
-  return true;
+  return {success: true, message: ""};
 }
 
 function getNotionPageId(message: string): string{
@@ -145,9 +151,9 @@ function getNotionPageId(message: string): string{
 
 async function readNotionPageAndReplySlack(pageId: string, threadId: string, slackTs: any, say: any) {
   const result = await addNotionPageIntoThread(pageId, threadId);
-  if (!result) {
+  if (!result.success) {
     say({
-      text: "ERROR: Something went wrong, please try again after a while.",
+      text: result.message,
       thread_ts: slackTs,
     });
   } else {
