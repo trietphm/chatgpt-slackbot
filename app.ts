@@ -367,8 +367,8 @@ async function analyticLog(user_id, username, prompt) {
   }
 
   // write to ANALYTICS_FILE
-  // The format will be timestamp, user_id, username, prompt_length
-  fs.appendFile(process.env.ANALYTICS_FILE, `${Date.now()},${user_id},${username},${prompt.length}\n`, (err) => {
+  // The format will be datetime, user_id, username, prompt_length
+  fs.appendFile(process.env.ANALYTICS_FILE, `${new Date().toISOString()},${user_id},${username},${prompt.length}\n`, (err) => {
     if (err) {
       console.log('Failed to write analytic:', err);
     }
