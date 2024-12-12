@@ -6,6 +6,7 @@ const { App } = require("@slack/bolt");
 const { Client } = require("@notionhq/client")
 const { NotionToMarkdown } = require("notion-to-md");
 const WAITING_REACTION_EMOJI = "working-on-it";
+const fs = require('node:fs');
 
 dotenv.config();
 let SlackUsers: Map<string, string> = new Map();
@@ -233,6 +234,9 @@ app.message(async ({ message, say, client, logger }) => {
 
     // Remove the waiting reaction emoji after response
     await removeWaitingEmoji(client, message.channel, message.ts)
+
+    // Log the analytic
+    analyticLog(message.user, SlackUsers.get(message.user), prompt);
   } catch (err) {
     await say({
       text: "ERROR: Something went wrong, please try again after a while.",
@@ -297,10 +301,11 @@ app.event("app_mention", async ({ event, context, client, say }) => {
       thread_ts:event.ts,
     });
 
-
-
     // Remove the waiting reaction emoji after response
     await removeWaitingEmoji(client, event.channel, event.ts)
+
+    // Log the analytic
+    analyticLog(event.user, SlackUsers.get(event.user), prompt);
   } catch (err) {
     await say({
       text: "ERROR: Something went wrong, please try again after a while.",
@@ -354,3 +359,18 @@ initDataFromSlack();
 
   console.log("⚡️ Slack chat app is running at port 4000!");
 })();
+
+// This function will log the analytic data to a file
+async function analyticLog(user_id, username, prompt) {
+  if (!process.env.ENABLE_ANALYTICS) {
+    return;
+  }
+
+  // write to ANALYTICS_FILE
+  // The format will be timestamp, user_id, username, prompt_length
+  fs.appendFile(process.env.ANALYTICS_FILE, `${Date.now()},${user_id},${username},${prompt.length}\n`, (err) => {
+    if (err) {
+      console.log('Failed to write analytic:', err);
+    }
+  });
+}
