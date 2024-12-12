@@ -5,7 +5,7 @@ import slackifyMarkdown from "slackify-markdown";
 const { App } = require("@slack/bolt");
 const { Client } = require("@notionhq/client")
 const { NotionToMarkdown } = require("notion-to-md");
-const WAITING_REACTION_EMOJI = "eyes";
+const WAITING_REACTION_EMOJI = "working-on-it";
 
 dotenv.config();
 let SlackUsers: Map<string, string> = new Map();
@@ -175,6 +175,12 @@ let threadMap: Map<string, ChatMessage[]> = new Map();
 
 // Listens to incoming direct messages
 app.message(async ({ message, say, client, logger }) => {
+  // Ignore messages that has no text
+  if (!message.text) {
+    console.log("Ignored message:", message);
+    return;
+  }
+
   try {
     let prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
     // Get the conversation for the thread
@@ -241,7 +247,7 @@ app.message(async ({ message, say, client, logger }) => {
 // Listens to mention
 app.event("app_mention", async ({ event, context, client, say }) => {
   console.log("Mention: " + event.text);
-  let prompt = event.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
+  let prompt = event.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "").trim();
   try {
     // Get the conversation for the thread
     const threadId = event.thread_ts || event.event_ts;
@@ -262,7 +268,7 @@ app.event("app_mention", async ({ event, context, client, say }) => {
 
     if (prompt.trim().toLowerCase() == "summary") {
       const SlackThreadMessages = await fetchMessagesFromSlackThread(client, event.thread_ts, event.channel);
-      prompt = "Please provide a summary of the following conversation:\n\n" + SlackThreadMessages
+      prompt = "Please provide a summary of the following conversation. Be concise but clear, and summary in bullet points. Here is the conversation:\n\n" + SlackThreadMessages
     }
 
     let conversations = threadMap.get(threadId) || [];
