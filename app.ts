@@ -42,7 +42,7 @@ interface ChatMessage {
 
 async function askChatCompletion(messages) {
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4.1',
     messages: messages
   });
 
