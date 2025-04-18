@@ -185,7 +185,7 @@ async function getPromptCommand(prompt: string, client: any, message: any, say: 
   if (prompt.toLowerCase() == "summary") {
     console.log("Summary command detected");
     const SlackThreadMessages = await fetchMessagesFromSlackThread(client, message.thread_ts, message.channel);
-    prompt = "Read the following Slack thread and provide a concise summary (max 5 sentences) highlighting only the key points. Also, list any action items or decisions that were made. Omit minor details and repetitive information. If conversations are very long, consider chunking by time/topic and summarizing each: \n\n"
+    prompt = "Read the following Slack thread and provide a concise summary (max 5 sentences) highlighting only the key points. Also, list any action items or decisions that were made. List out questions or concern that have not been cleared. Omit minor details and repetitive information. If conversations are very long, consider chunking by time/topic and summarizing each: \n\n"
     prompt += SlackThreadMessages;
 
     return { action: 'summary', value: prompt, prompt: prompt };
