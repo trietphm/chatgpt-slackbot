@@ -191,7 +191,15 @@ async function getPromptCommand(prompt: string, client: any, message: any, say: 
     return { action: 'summary', value: prompt, prompt: prompt };
   }
 
-    console.log("nothing detected");
+  // If the first word of the prompt is thread, the rest of the prompt is the new prompt
+  if (prompt.startsWith("thread")) {
+    const SlackThreadMessages = await fetchMessagesFromSlackThread(client, message.thread_ts, message.channel);
+    prompt = prompt.substring(prompt.indexOf(" ") + 1);
+    prompt += "\n\n" + SlackThreadMessages;
+
+    return { action: 'thread', value: prompt, prompt: prompt };
+  }
+
   return { action: 'none', value: '', prompt: prompt };
 }
 
@@ -254,6 +262,7 @@ app.message(async ({ message, say, client, logger }) => {
         await readNotionPageAndReplySlack(notionPageId, threadId, message.ts, say);
         return;
 
+      case 'thread':
       case 'summary':
         prompt = promptCommand.prompt;
         console.log("summary prompt:", prompt);
@@ -296,6 +305,7 @@ app.event("app_mention", async ({ event, context, client, say }) => {
         await readNotionPageAndReplySlack(notionPageId, threadId, event.ts, say);
         return;
 
+      case 'thread':
       case 'summary':
         prompt = promptCommand.prompt;
         console.log("Mention promptCommand:", promptCommand);
