@@ -165,6 +165,63 @@ async function readNotionPageAndReplySlack(pageId: string, threadId: string, sla
   }
 }
 
+function getRawPrompt(message: string) {
+  // Remove the @mention from the message
+  return message.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "").trim();
+}
+
+async function getPromptCommand(prompt: string, client: any, message: any, say: any) {
+  const threadId = message.thread_ts || message.event_ts;
+    console.log("thread");
+  // Check if the message is a Notion page link
+  const notionPageId = getNotionPageId(prompt);
+  if (notionPageId != "") {
+    readNotionPageAndReplySlack(notionPageId, threadId, message.ts, say);
+
+    return { action: 'read_notion_page', value: notionPageId, prompt: prompt };
+  }
+
+  // Single word command "summary"
+  if (prompt.toLowerCase() == "summary") {
+    console.log("Summary command detected");
+    const SlackThreadMessages = await fetchMessagesFromSlackThread(client, message.thread_ts, message.channel);
+    prompt = "Read the following Slack thread and provide a concise summary (max 5 sentences) highlighting only the key points. Also, list any action items or decisions that were made. Omit minor details and repetitive information. If conversations are very long, consider chunking by time/topic and summarizing each: \n\n"
+    prompt += SlackThreadMessages;
+
+    return { action: 'summary', value: prompt, prompt: prompt };
+  }
+
+    console.log("nothing detected");
+  return { action: 'none', value: '', prompt: prompt };
+}
+
+async function replyToSlack(prompt: string, threadId: string, message: any, say: any) {
+  let conversations = threadMap.get(threadId) || [];
+
+  // Add the user message to the conversation
+  conversations.push(newUserMessage(prompt));
+
+  // Send the conversation to OpenAI
+  let response = await askChatCompletion(conversations);
+  if (!response) {
+    await say({
+      text: "ERROR: Something went wrong, please try again after a while.",
+      thread_ts: message.ts,
+    });
+    return;
+  }
+  // Add the response to the conversation
+  conversations.push(newAssistantMessage(response));
+  
+  // Update the threadMap
+  threadMap.set(threadId, conversations);
+
+  // Send response to Slack
+  await say({
+    text: slackifyMarkdown(response),
+    thread_ts: message.ts,
+  });
+}
 
 // --------------------
 // Handle Slack Events
@@ -183,55 +240,32 @@ app.message(async ({ message, say, client, logger }) => {
   }
 
   try {
-    let prompt = message.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "");
+    let prompt = getRawPrompt(message.text);
     // Get the conversation for the thread
     const threadId = message.thread_ts || message.event_ts;
-
     // Add a reaction so we know the ChatGPT is replying
     await reactWaitingEmoji(client, message.channel, message.ts);
     logWithTimestamp(`Sent message: ${prompt}`);
 
-    // Check if the message is a Notion page link
-    const notionPageId = getNotionPageId(prompt);
-    if (notionPageId != "") {
-      // Read the notion page content and reply to the slack thread
-      await readNotionPageAndReplySlack(notionPageId, threadId, message.ts, say);
+    let promptCommand = await getPromptCommand(prompt, client, message, say);
+    switch (promptCommand.action) {
+      case 'read_notion_page':
+        const notionPageId = promptCommand.value;
+        await readNotionPageAndReplySlack(notionPageId, threadId, message.ts, say);
+        return;
 
-      // Remove the waiting reaction emoji after response
-      return removeWaitingEmoji(client, message.channel, message.ts);
+      case 'summary':
+        prompt = promptCommand.prompt;
+        console.log("summary prompt:", prompt);
+        await replyToSlack(prompt, threadId, message, say);
+        break;
+
+      case 'none':
+        await replyToSlack(prompt, threadId, message, say);
+        // Do nothing
+        break;
     }
-
-    if (prompt.trim().toLowerCase() == "summary") {
-      const SlackThreadMessages = await fetchMessagesFromSlackThread(client, message.thread_ts, message.channel);
-      prompt = "Read the following Slack thread and provide a concise summary (max 5 sentences) highlighting only the key points. Also, list any action items or decisions that were made. Omit minor details and repetitive information. If conversations are very long, consider chunking by time/topic and summarizing each: \n\n"
-      prompt += SlackThreadMessages;
-    }
-
-    let conversations = threadMap.get(threadId) || [];
-
-    // Add the user message to the conversation
-    conversations.push(newUserMessage(prompt));
-
-    // Send the conversation to OpenAI
-    let response = await askChatCompletion(conversations);
-    if (!response) {
-      await say({
-        text: "ERROR: Something went wrong, please try again after a while.",
-        thread_ts: message.ts,
-      });
-      return;
-    }
-    // Add the response to the conversation
-    conversations.push(newAssistantMessage(response));
-    
-    // Update the threadMap
-    threadMap.set(threadId, conversations);
-
-    // Send response to Slack
-    await say({
-      text: slackifyMarkdown(response),
-      thread_ts: message.ts,
-    });
+    console.log("Prompt command:", promptCommand);
 
     // Remove the waiting reaction emoji after response
     await removeWaitingEmoji(client, message.channel, message.ts)
@@ -239,20 +273,14 @@ app.message(async ({ message, say, client, logger }) => {
     // Log the analytic
     analyticLog(message.user, SlackUsers.get(message.user), prompt);
   } catch (err) {
-    await say({
-      text: "ERROR: Something went wrong, please try again after a while.",
-      thread_ts: message.ts,
-    });
-    console.log("Object msg:", message);
-    console.log("Text msg:", message.text);
-    console.log(err);
+    errorHandler(err, say, message);
   }
 });
 
 // Listens to mention
 app.event("app_mention", async ({ event, context, client, say }) => {
   console.log("Mention: " + event.text);
-  let prompt = event.text.replace(/(?:\s)<@[^, ]*|(?:^)<@[^, ]*/, "").trim();
+  let prompt = getRawPrompt(event.text);
   try {
     // Get the conversation for the thread
     const threadId = event.thread_ts || event.event_ts;
@@ -261,47 +289,25 @@ app.event("app_mention", async ({ event, context, client, say }) => {
     await reactWaitingEmoji(client, event.channel, event.ts);
     logWithTimestamp(`Sent message: ${prompt}`);
 
-    // Check if the message is a Notion page link
-    const notionPageId = getNotionPageId(prompt.trim());
-    if (notionPageId != "") {
-      // Read the notion page content and reply to the slack thread
-      await readNotionPageAndReplySlack(notionPageId, threadId, event.ts, say);
+    let promptCommand = await getPromptCommand(prompt, client, event, say);
+    switch (promptCommand.action) {
+      case 'read_notion_page':
+        const notionPageId = promptCommand.value;
+        await readNotionPageAndReplySlack(notionPageId, threadId, event.ts, say);
+        return;
 
-      // Remove the waiting reaction emoji after response
-      return removeWaitingEmoji(client, event.channel, event.ts);
+      case 'summary':
+        prompt = promptCommand.prompt;
+        console.log("Mention promptCommand:", promptCommand);
+        console.log("Mention summary prompt:", prompt);
+        await replyToSlack(prompt, threadId, event, say);
+        break;
+
+      case 'none':
+        // Do nothing
+        await replyToSlack(prompt, threadId, event, say);
+        break;
     }
-
-    if (prompt.trim().toLowerCase() == "summary") {
-      const SlackThreadMessages = await fetchMessagesFromSlackThread(client, event.thread_ts, event.channel);
-      prompt = "Read the following Slack thread and provide a concise summary (max 5 sentences) highlighting only the key points. Also, list any action items or decisions that were made. Omit minor details and repetitive information. If conversations are very long, consider chunking by time/topic and summarizing each: \n\n"
-      prompt += SlackThreadMessages;
-    }
-
-    let conversations = threadMap.get(threadId) || [];
-
-    // Add the user message to the conversation
-    conversations.push(newUserMessage(prompt));
-
-    // Send the conversation to OpenAI
-    let response = await askChatCompletion(conversations);
-    if (!response) {
-      await say({
-        text: "ERROR: Something went wrong, please try again after a while.",
-        thread_ts:event.ts,
-      });
-      return;
-    }
-    // Add the response to the conversation
-    conversations.push(newAssistantMessage(response));
-
-    // Update the threadMap
-    threadMap.set(threadId, conversations);
-
-    // Send response to Slack
-    await say({
-      text: slackifyMarkdown(response),
-      thread_ts:event.ts,
-    });
 
     // Remove the waiting reaction emoji after response
     await removeWaitingEmoji(client, event.channel, event.ts)
@@ -309,14 +315,7 @@ app.event("app_mention", async ({ event, context, client, say }) => {
     // Log the analytic
     analyticLog(event.user, SlackUsers.get(event.user), prompt);
   } catch (err) {
-    await say({
-      text: "ERROR: Something went wrong, please try again after a while.",
-      thread_ts: event.ts,
-    });
-    console.log("Object event:", event);
-    console.log("Text event:", event.text);
-
-    console.log(err);
+    errorHandler(err, say, event);
   }
 });
 
@@ -375,4 +374,16 @@ async function analyticLog(user_id, username, prompt) {
       console.log('Failed to write analytic:', err);
     }
   });
+}
+
+// error handling
+async function errorHandler(err, say, message) {
+    await say({
+      text: "ERROR: Something went wrong, please try again after a while.",
+      thread_ts: message.ts,
+    });
+    console.log("Object msg:", message);
+    console.log("Text msg:", message.text);
+    console.log(err);
+    console.error('Error:', err);
 }
