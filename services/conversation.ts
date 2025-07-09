@@ -2,6 +2,7 @@ import { ChatMessage, PromptCommand, SlackMessage } from "../types";
 import { OpenAIService } from "./openai";
 import { NotionService } from "./notion";
 import { SlackService } from "./slack";
+import { KnowledgeBaseService } from "./knowledge-base";
 import { PROMPTS } from "../config";
 import slackifyMarkdown from "slackify-markdown";
 
@@ -10,11 +11,13 @@ export class ConversationService {
   private openaiService: OpenAIService;
   private notionService: NotionService;
   private slackService: SlackService;
+  private knowledgeBaseService: KnowledgeBaseService;
 
   constructor() {
     this.openaiService = new OpenAIService();
     this.notionService = new NotionService();
     this.slackService = new SlackService();
+    this.knowledgeBaseService = new KnowledgeBaseService();
   }
 
   async processPromptCommand(
@@ -87,11 +90,49 @@ export class ConversationService {
       processedPrompt = "Please analyze this image and describe what you see.";
     }
 
+    // Search knowledge base for relevant context
+    let knowledgeContext = '';
+    if (processedPrompt.trim()) {
+      try {
+        console.log(`🔍 Searching knowledge base for: "${processedPrompt}"`);
+        const searchResults = await this.knowledgeBaseService.searchKnowledge(processedPrompt);
+        console.log(`📊 Found ${searchResults.length} search results`);
+        
+        if (searchResults.length > 0) {
+          knowledgeContext = '\n\nRelevant knowledge base information:\n';
+          searchResults.forEach((result, index) => {
+            console.log(`📄 Result ${index + 1}: ${result.filename} (similarity: ${(result.similarity * 100).toFixed(1)}%)`);
+            console.log(`📝 Content preview: ${result.content.substring(0, 200)}...`);
+            
+            knowledgeContext += `\n--- Source: ${result.filename} (similarity: ${(result.similarity * 100).toFixed(1)}%) ---\n`;
+            knowledgeContext += result.content;
+            knowledgeContext += '\n';
+          });
+        } else {
+          console.log('❌ No relevant knowledge base results found');
+        }
+      } catch (error) {
+        console.error('❌ Error searching knowledge base:', error);
+      }
+    } else {
+      console.log('⚠️ No text prompt to search knowledge base');
+    }
+
+    // Create the final prompt with knowledge context
+    let finalPrompt = processedPrompt;
+    if (knowledgeContext) {
+      finalPrompt = PROMPTS.KNOWLEDGE_BASE_CONTEXT + knowledgeContext + '\n\nQuestion: ' + processedPrompt;
+      console.log(`🎯 Final prompt length: ${finalPrompt.length} characters`);
+      console.log(`📋 Context length: ${knowledgeContext.length} characters`);
+    } else {
+      console.log(`⚠️ No knowledge context added, using original prompt`);
+    }
+
     // Add the user message to the conversation (with images if present)
     if (images.length > 0) {
-      conversations.push(OpenAIService.createUserMessageWithImages(processedPrompt, images));
+      conversations.push(OpenAIService.createUserMessageWithImages(finalPrompt, images));
     } else {
-      conversations.push(OpenAIService.createUserMessage(processedPrompt));
+      conversations.push(OpenAIService.createUserMessage(finalPrompt));
     }
 
     // Send the conversation to OpenAI

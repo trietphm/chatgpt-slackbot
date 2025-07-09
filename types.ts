@@ -47,4 +47,40 @@ export interface SlackEvent {
   thread_ts?: string;
   event_ts?: string;
   channel: string;
+}
+
+// Knowledge Base Types
+export interface KnowledgeChunk {
+  id: string;
+  content: string;
+  filename: string;
+  chunk_index: number;
+  embedding?: number[];
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface SearchResult {
+  content: string;
+  filename: string;
+  chunk_index: number;
+  similarity: number;
+}
+
+export interface EmbeddingResponse {
+  data: Array<{
+    embedding: number[];
+    index: number;
+  }>;
+  usage: {
+    prompt_tokens: number;
+    total_tokens: number;
+  };
+}
+
+export interface KnowledgeBaseConfig {
+  folder_path: string;
+  chunk_size: number;
+  chunk_overlap: number;
+  model: string;
 } 

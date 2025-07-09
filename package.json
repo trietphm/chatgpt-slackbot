@@ -6,22 +6,29 @@
   "scripts": {
     "start": "ts-node app-refactored.ts",
     "start:original": "ts-node app.ts",
+    "start:api": "ts-node api-server.ts",
     "dev": "ts-node-dev --respawn app-refactored.ts",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
-    "test": "jest"
+    "test": "jest",
+    "process-knowledge": "ts-node scripts/process-knowledge.ts",
+    "test-knowledge": "ts-node scripts/test-knowledge.ts"
   },
   "dependencies": {
     "@notionhq/client": "^3.0.0",
     "@slack/bolt": "^4.0.0",
     "axios": "^1.10.0",
-    "dotenv-safe": "^8.0.0",
+    "dotenv-safe": "^8.2.0",
+    "express": "^5.1.0",
     "notion-to-md": "^3.1.1",
     "openai": "^5.0.0",
-    "slackify-markdown": "^4.5.0"
+    "pg": "^8.16.3",
+    "slackify-markdown": "^4.0.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/node": "^20.10.0",
+    "@types/pg": "^8.15.4",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
     "eslint": "^8.54.0",

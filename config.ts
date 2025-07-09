@@ -1,4 +1,4 @@
-import * as dotenv from "dotenv-safe";
+import dotenv from "dotenv-safe";
 
 dotenv.config();
 
@@ -10,7 +10,8 @@ export const CONFIG = {
   },
   OPENAI: {
     API_KEY: process.env['OPENAI_API_KEY']!,
-    MODEL: 'gpt-4.1',
+    MODEL: 'gpt-4',
+    EMBEDDING_MODEL: 'text-embedding-3-small',
   },
   NOTION: {
     TOKEN: process.env['NOTION_TOKEN'] || "",
@@ -22,6 +23,24 @@ export const CONFIG = {
   EMOJI: {
     WAITING: "hourglass_flowing_sand",
   },
+  DATABASE: {
+    HOST: process.env['DB_HOST'] || 'localhost',
+    PORT: parseInt(process.env['DB_PORT'] || '5432'),
+    DATABASE: process.env['DB_NAME'] || 'knowledge_base',
+    USER: process.env['DB_USER'] || 'postgres',
+    PASSWORD: process.env['DB_PASSWORD'] || '',
+    SSL: process.env['DB_SSL'] === 'true',
+  },
+  KNOWLEDGE_BASE: {
+    FOLDER_PATH: process.env['KB_FOLDER_PATH'] || './knowledge',
+    CHUNK_SIZE: parseInt(process.env['KB_CHUNK_SIZE'] || '1000'),
+    CHUNK_OVERLAP: parseInt(process.env['KB_CHUNK_OVERLAP'] || '200'),
+    SEARCH_LIMIT: parseInt(process.env['KB_SEARCH_LIMIT'] || '5'),
+    SIMILARITY_THRESHOLD: parseFloat(process.env['KB_SIMILARITY_THRESHOLD'] || '0.7'),
+  },
+  API: {
+    PORT: parseInt(process.env['API_PORT'] || '3000'),
+  },
 } as const;
 
 export const PROMPTS = {
@@ -29,4 +48,5 @@ export const PROMPTS = {
   NOTION_CONTEXT: "You are a helpful assistant who answers questions about the following Notion page:\n\n",
   NOTION_READY: "I have read the Notion page content. Ask me any questions about it!",
   ERROR: "ERROR: Something went wrong, please try again after a while.",
+  KNOWLEDGE_BASE_CONTEXT: "You are a helpful assistant with access to a knowledge base. Use the following context to answer the user's question. If the context doesn't contain enough information to answer the question, say so. Always cite your sources by mentioning the filename.\n\nContext:\n",
 } as const; 

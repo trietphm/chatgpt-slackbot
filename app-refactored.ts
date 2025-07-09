@@ -145,6 +145,17 @@ class SlackChatApp {
       Logger.error("Error during initialization", error);
     }
   }
+
+  async test(): Promise<any> {
+    try {
+      const authTest = await this.app.client.auth.test();
+      console.log("Auth test successful:", authTest);
+      return authTest;
+    } catch (error) {
+      Logger.error("Error during auth test", error);
+      throw error;
+    }
+  }
 }
 
 // Auto restart functionality
@@ -153,6 +164,9 @@ const startApp = async (): Promise<void> => {
   
   try {
     await app.initialize();
+
+    // Get bot user info
+    await app.test();
     await app.start();
   } catch (error) {
     Logger.error("App crashed, restarting...", error);
