@@ -32,7 +32,11 @@ class SlackChatApp {
   }
 
   private async handleMessage({ message, say, client }: any): Promise<void> {
-    if (!message.text) {
+    // Check if message has text or files (images)
+    const hasText = message.text && message.text.trim().length > 0;
+    const hasFiles = message.files && message.files.length > 0;
+    
+    if (!hasText && !hasFiles) {
       Logger.log(`Ignored message: ${JSON.stringify(message)}`);
       return;
     }
@@ -47,7 +51,8 @@ class SlackChatApp {
 
   private async processSlackEvent(message: SlackMessage | SlackEvent, say: any, client: any): Promise<void> {
     try {
-      const prompt = SlackService.extractRawPrompt(message.text || '');
+      const hasText = message.text && message.text.trim().length > 0;
+      const prompt = hasText ? SlackService.extractRawPrompt(message.text || '') : '';
       const threadId = SlackService.getThreadId(message as SlackMessage);
       
       // Add waiting reaction
@@ -78,7 +83,8 @@ class SlackChatApp {
             promptCommand.prompt, 
             threadId, 
             message as SlackMessage, 
-            say
+            say,
+            client
           );
           break;
         case 'none':
@@ -86,7 +92,8 @@ class SlackChatApp {
             prompt, 
             threadId, 
             message as SlackMessage, 
-            say
+            say,
+            client
           );
           break;
       }

@@ -10,7 +10,7 @@ export const CONFIG = {
   },
   OPENAI: {
     API_KEY: process.env['OPENAI_API_KEY']!,
-    MODEL: 'gpt-4',
+    MODEL: 'gpt-4.1',
   },
   NOTION: {
     TOKEN: process.env['NOTION_TOKEN'] || "",

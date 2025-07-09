@@ -25,7 +25,7 @@ export class OpenAIService {
     }
   }
 
-  static createUserMessage(content: string): ChatMessage {
+  static createUserMessage(content: string | Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }>): ChatMessage {
     return { role: Role.user, content };
   }
 
@@ -35,5 +35,25 @@ export class OpenAIService {
 
   static createSystemMessage(content: string): ChatMessage {
     return { role: Role.system, content };
+  }
+
+  static createUserMessageWithImages(text: string, images: string[]): ChatMessage {
+    if (images.length === 0) {
+      return this.createUserMessage(text);
+    }
+
+    const content: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }> = [];
+    
+    // Add text content if present
+    if (text.trim()) {
+      content.push({ type: 'text', text });
+    }
+
+    // Add image content
+    for (const image of images) {
+      content.push({ type: 'image_url', image_url: { url: image } });
+    }
+
+    return { role: Role.user, content };
   }
 } 
