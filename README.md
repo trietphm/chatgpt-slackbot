@@ -1,66 +1,117 @@
-ChatGPT for Slack
----
+# Slack ChatGPT Integration - Refactored
 
-Start an API service for interacting with ChatGPT on Slack using the [OpenAI node](https://github.com/openai/openai-node)
+A clean, modular Slack bot that integrates with ChatGPT and Notion for enhanced team communication.
 
-_Note: The code is ugly because I only want to make it works and too lazy to maintain_
+## Architecture
 
-## Setup
-### Register for an OpenAI API Key
-Sign up at https://platform.openai.com/overview and create a new API key in https://platform.openai.com/account/api-keys
-### Setup Slack App
-Check this for the guide how to create a Slack App https://slack.dev/bolt-js/tutorial/getting-started
-
-And you need these keys for the next step
-```
-SLACK_SIGNING_SECRET=""
-SLACK_BOT_TOKEN=""
-SLACK_APP_TOKEN=""
-```
-
-In OAuth & Permission, add these scopes to Bot Token Scopes
+The code has been refactored into a clean, modular architecture with the following structure:
 
 ```
-app_mentions:read
-channels:join
-chat:write
-chat:write.customize
-chat:write.public
-im:history
-im:read
-im:write
+├── app.ts                    # Original monolithic file
+├── app-refactored.ts         # New refactored main application
+├── config.ts                 # Centralized configuration
+├── types.ts                  # TypeScript type definitions
+├── services/
+│   ├── openai.ts            # OpenAI API service
+│   ├── notion.ts            # Notion API service
+│   ├── slack.ts             # Slack API service
+│   └── conversation.ts      # Conversation management
+└── utils/
+    ├── logger.ts            # Logging utilities
+    └── analytics.ts         # Analytics utilities
 ```
 
-_Probably don't need all of them, but I'm too lazy to check, sorry_
+## Key Improvements
 
-### Setup your app
-- Require nodejs >= 18 (required by above lirary)
-- Create new `.env` and update the information
-```
-cp .env.sample .env
-# Open file `.env` and filling all the keys
-```
-- Install
-```
-yarn install
-```
+### 1. **Separation of Concerns**
+- Each service handles its own domain (OpenAI, Notion, Slack)
+- Clear boundaries between different functionalities
+- Easier to test and maintain individual components
 
-- Start the service
-```
-yarn start
-```
+### 2. **Type Safety**
+- Centralized type definitions in `types.ts`
+- Proper TypeScript interfaces for all data structures
+- Better IDE support and error catching
+
+### 3. **Configuration Management**
+- All environment variables and constants in `config.ts`
+- Type-safe configuration with proper defaults
+- Easy to modify settings without touching business logic
+
+### 4. **Error Handling**
+- Consistent error handling across all services
+- Proper logging with timestamps
+- Graceful degradation when services fail
+
+### 5. **Code Reusability**
+- Static utility methods where appropriate
+- Service classes that can be easily extended
+- Clean dependency injection pattern
+
+## Services
+
+### OpenAIService
+- Handles all ChatGPT API interactions
+- Manages message creation and completion requests
+- Provides static methods for creating different message types
+
+### NotionService
+- Manages Notion page fetching and markdown conversion
+- Extracts page IDs from Slack messages
+- Handles Notion API errors gracefully
+
+### SlackService
+- Manages Slack API interactions
+- Handles user management and thread operations
+- Provides utilities for message processing
+
+### ConversationService
+- Orchestrates all other services
+- Manages conversation state and thread mapping
+- Handles different command types (summary, thread, notion)
 
 ## Usage
-### Ask questions
-- You can send a **direct message** to the Slack Bot and it will reply in a thread. Reply to the thread will follow the conversation
 
-<img src="images/dm.png" height="250">
+### Running the Refactored Version
 
-- Or invite it to a channel and mention it `@YourSlackBot <your question>`, you can mention it in the thread to continue the conversation
+```bash
+# Install dependencies
+npm install
 
-<img src="images/mention.png" width="512">
+# Set up environment variables in .env
+SLACK_BOT_TOKEN=your_bot_token
+SLACK_SIGNING_SECRET=your_signing_secret
+SLACK_APP_TOKEN=your_app_token
+OPENAI_API_KEY=your_openai_key
+NOTION_TOKEN=your_notion_token
 
-### Summary Slack thread
-You can send a message `@YourSlackBot summary` to get the summary of the current thread
+# Run the refactored version
+npx ts-node app-refactored.ts
+```
 
-<img src="images/summary.png" width="512">
+### Available Commands
+
+1. **Direct Messages**: Send any message to the bot
+2. **@mentions**: Mention the bot in any channel
+3. **`summary`**: Get a summary of the current thread
+4. **`thread <prompt>`**: Process the thread with a specific prompt
+5. **Notion Links**: Paste a Notion page link to load its content
+
+## Benefits of the Refactored Code
+
+1. **Maintainability**: Each service has a single responsibility
+2. **Testability**: Services can be unit tested independently
+3. **Scalability**: Easy to add new features or modify existing ones
+4. **Readability**: Clear, well-documented code structure
+5. **Type Safety**: Full TypeScript support with proper interfaces
+6. **Error Handling**: Robust error handling throughout the application
+
+## Migration from Original
+
+The original `app.ts` file has been preserved. To migrate to the refactored version:
+
+1. Update your startup script to use `app-refactored.ts`
+2. Ensure all environment variables are properly set
+3. Test all functionality to ensure compatibility
+
+The refactored version maintains all original functionality while providing a much cleaner and more maintainable codebase.
